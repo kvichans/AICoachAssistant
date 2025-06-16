@@ -105,7 +105,7 @@ class TelegramUser(models.Model):
     Модель для хранения пользователя Telegram,
     связанного с конкретным OpenAIAssistant.
     """
-    chat_id = models.IntegerField(
+    chat_id = models.BigIntegerField(
         primary_key=True,
         help_text='Уникальный идентификатор чата в Telegram'
     )
@@ -145,9 +145,10 @@ class TelegramUser(models.Model):
     )
     thread = models.ForeignKey(
         OpenAIThread,
-        on_delete=models.CASCADE,
-        related_name='telegram_users',
-        help_text='Тред, связанный с этим Telegram-пользователем'
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='telegram_users'
     )
 
     def __str__(self):

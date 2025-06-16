@@ -85,11 +85,14 @@ class TelegramUserService:
     def __init__(self, **kwargs):
         self.chat_id = kwargs.get("chat_id")
 
-    def create_user(self, assistant_id, thread_id):
+    def create_user(self, assistant_id, thread_id, username=None, first_name=None, last_name=None):
         user = TelegramUser.objects.create(
             chat_id=self.chat_id,
             assistant_id=assistant_id,
-            thread_id=thread_id
+            thread_id=thread_id,
+            username=username,
+            first_name=first_name,
+            last_name=last_name
         )
         user.save()
         return

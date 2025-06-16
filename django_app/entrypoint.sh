@@ -1,52 +1,25 @@
 #!/bin/sh
 set -e
 
-# ---------------------------------------------
-# 0) Подгружаем переменные из .env (с конвертацией CRLF→LF)
-# ---------------------------------------------
-if [ -f /app/.env ]; then
-  echo "=== Подгружаем переменные окружения из .env …"
-  # Сначала убираем возможные \r (если .env в DOS-формате) и записываем временно в переменную
-  # (тут используем subshell, чтобы не заменять сам файл на диске)
-  ENV_CONTENT=$(tr -d '\r' < /app/.env)
+# Ждём, пока Postgres станет доступен
+echo "=== Waiting for Postgres at ${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}…"
+until nc -z ${POSTGRES_HOST:-db} ${POSTGRES_PORT:-5432}; do
+  sleep 1
+done
+echo "=== Postgres is up, continue…"
 
-  # Экспортируем все строки вида KEY=VALUE
-  echo "$ENV_CONTENT" | while IFS='=' read -r KEY VALUE; do
-    # Игнорируем пустые строки и строки, начинающиеся с '#'
-    case "$KEY" in
-      ''|\#*) continue ;;
-      *) export "$KEY"="$VALUE" ;;
-    esac
-  done
-else
-  echo "!!! .env файл не найден, все переменные должны быть уже в окружении."
-fi
-
-# ---------------------------------------------
-# 1) Применяем миграции Django
-# ---------------------------------------------
-echo "=== Применяем миграции Django…"
+# Миграции
+echo "=== Apply Django migrations…"
 python manage.py migrate --noinput
 
-# ---------------------------------------------
-# 2) Создаём суперпользователя (если не существует)
-# ---------------------------------------------
-echo "=== Создаём суперпользователя ${DJANGO_SUPERUSER_USERNAME} …"
-python manage.py createsuperuser --noinput \
-    --username "${DJANGO_SUPERUSER_USERNAME}" \
-    --email "${DJANGO_SUPERUSER_EMAIL}" || \
-  echo "!!! Superuser уже существует или не удалось создать."
+# Статика
+echo "=== Collect static files…"
+python manage.py collectstatic --noinput
 
-# ---------------------------------------------
-# 3) Запускаем Django-сервер в фоне (0.0.0.0:8000)
-# ---------------------------------------------
-echo "=== Запускаем Django-сервер …"
+# Запуск Django (можно заменить на gunicorn)
+echo "=== Start Django runserver…"
 python manage.py runserver 0.0.0.0:8000 &
 
-# ---------------------------------------------
-# 4) Запускаем Telegram-бота
-# ---------------------------------------------
-echo "=== Запускаем Telegram-бота …"
-python telegram_bot.py
-
-# Когда telegram_bot.py завершится, процесс контейнера тоже остановится.
+# Запуск Telegram-бота
+echo "=== Start Telegram bot…"
+exec python telegram_bot.py

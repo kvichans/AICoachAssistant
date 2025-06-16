@@ -111,6 +111,9 @@ async def voice_handler(message: types.Message):
         user_service = TelegramUserService(chat_id=message.chat.id)
         thread_obj = await sync_to_async(user_service.get_thread_by_user)()
         thread_id = thread_obj.id if thread_obj else None
+        username = message.from_user.username or None
+        first_name = message.from_user.first_name or None
+        last_name = message.from_user.last_name or None
 
         if thread_id:
             thread_service = OpenAIThreadService(
@@ -124,7 +127,8 @@ async def voice_handler(message: types.Message):
             await sync_to_async(thread_service.create_thread)(user_text, VECTOR_STORE_ID)
             # Синхронный вызов create_thread оборачиваем
             await sync_to_async(user_service.create_user)(assistant_id=thread_service.assistant_id,
-                                                          thread_id=thread_service.thread_id)
+                                                          thread_id=thread_service.thread_id, username=username,
+                                                          first_name=first_name, last_name=last_name)
 
         # Синхронный вызов run_tread оборачиваем
         run = await sync_to_async(thread_service.run_tread)()
@@ -180,6 +184,9 @@ async def voice_handler(message: types.Message):
 async def handle_message(message: types.Message):
     await bot.send_chat_action(message.from_user.id, 'typing')
     user_text = message.text
+    username = message.from_user.username or None
+    first_name = message.from_user.first_name or None
+    last_name = message.from_user.last_name or None
     try:
         # Синхронный вызов get_thread_by_user оборачиваем
         user_service = TelegramUserService(chat_id=message.chat.id)
@@ -197,7 +204,9 @@ async def handle_message(message: types.Message):
             thread_service = OpenAIThreadService(assistant_id=assistant.id)
             await sync_to_async(thread_service.create_thread)(user_text, VECTOR_STORE_ID)
             # Синхронный вызов create_thread оборачиваем
-            await sync_to_async(user_service.create_user)(assistant_id=thread_service.assistant_id, thread_id=thread_service.thread_id)
+            await sync_to_async(user_service.create_user)(assistant_id=thread_service.assistant_id,
+                                                          thread_id=thread_service.thread_id, username=username,
+                                                          first_name=first_name, last_name=last_name)
 
         # Синхронный вызов run_tread оборачиваем
         run = await sync_to_async(thread_service.run_tread)()
