@@ -193,6 +193,7 @@ async def handle_message(message: types.Message):
         thread_obj = await sync_to_async(user_service.get_thread_by_user)()
         thread_id = thread_obj.id if thread_obj else None
 
+
         if thread_id:
             thread_service = OpenAIThreadService(
                 thread_id=thread_id,
