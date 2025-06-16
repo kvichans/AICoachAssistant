@@ -126,9 +126,9 @@ async def voice_handler(message: types.Message):
             thread_service = OpenAIThreadService(assistant_id=assistant.id)
             await sync_to_async(thread_service.create_thread)(user_text, VECTOR_STORE_ID)
             # Синхронный вызов create_thread оборачиваем
-            await sync_to_async(user_service.create_user)(assistant_id=thread_service.assistant_id,
-                                                          thread_id=thread_service.thread_id, username=username,
-                                                          first_name=first_name, last_name=last_name)
+            await sync_to_async(user_service.create_or_update_user)(assistant_id=thread_service.assistant_id,
+                                                                    thread_id=thread_service.thread_id, username=username,
+                                                                    first_name=first_name, last_name=last_name)
 
         # Синхронный вызов run_tread оборачиваем
         run = await sync_to_async(thread_service.run_tread)()
@@ -205,9 +205,9 @@ async def handle_message(message: types.Message):
             thread_service = OpenAIThreadService(assistant_id=assistant.id)
             await sync_to_async(thread_service.create_thread)(user_text, VECTOR_STORE_ID)
             # Синхронный вызов create_thread оборачиваем
-            await sync_to_async(user_service.create_user)(assistant_id=thread_service.assistant_id,
-                                                          thread_id=thread_service.thread_id, username=username,
-                                                          first_name=first_name, last_name=last_name)
+            await sync_to_async(user_service.create_or_update_user)(assistant_id=thread_service.assistant_id,
+                                                                    thread_id=thread_service.thread_id, username=username,
+                                                                    first_name=first_name, last_name=last_name)
 
         # Синхронный вызов run_tread оборачиваем
         run = await sync_to_async(thread_service.run_tread)()
