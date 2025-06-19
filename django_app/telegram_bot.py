@@ -2,6 +2,7 @@ import os
 import sys
 import django
 from pathlib import Path
+from time import sleep
 
 from aiogram.enums import ChatAction
 from aiogram.types import FSInputFile
@@ -144,12 +145,23 @@ async def voice_handler(message: types.Message):
 
 
             # 4. Генерация TTS (GPT-4o-mini-tts) в .mp3
+            await bot.send_chat_action(message.from_user.id, 'record_voice')
             tts_mp3_path = Path(__file__).parent / f"files/transcription_{file_id}.mp3"
             with client.audio.speech.with_streaming_response.create(
                     model="gpt-4o-mini-tts",
-                    voice="coral",
+                    voice="alloy",
                     input=clear_answer,
-                    instructions="Отвечай спокойном тоне",
+                    instructions="""
+                    Accent: neutral Russian, without pronounced regional characteristics
+                    Emotional range: warm, empathetic, supportive
+                    Intonation:
+                      – question_end: slight rise in intonation
+                      – statement: steady, calm
+                    Impressions: confident coach-mentor, gentle inspirer
+                    Speed of speech: very fast
+                    Tone: calm, friendly, trust-building
+                    Whispering: subtle, quiet inflections on emphatic phrases
+                    """,
             ) as response:
                 response.stream_to_file(tts_mp3_path)
 
