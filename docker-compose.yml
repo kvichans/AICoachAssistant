@@ -13,7 +13,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Привязываем папку data/pgdata на хосте к каталогу данных Postgres в контейнере
       - ./data/pgdata:/var/lib/postgresql/data
 
   web:

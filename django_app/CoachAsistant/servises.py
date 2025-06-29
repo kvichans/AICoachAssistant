@@ -1,7 +1,6 @@
 import os
 import json
-from .docs.variables import user_message_1, user_message_2, instructions, user_message_3
-
+from .docs.variables import user_message_1, user_message_2, instructions, exercise_1, exercise_2
 from .models import OpenAIThread, TelegramUser, OpenAIAssistant
 from .serializers import OpenAIAssistantSerializer, OpenAIThreadSerializer
 
@@ -37,17 +36,16 @@ class OpenAIThreadService:
         self.assistant_id = assistant_id
         self.thread_id = thread_id
 
-    def create_thread(self, message_text: str, vector_store_id: list):
+    def create_thread(self, vector_store_id: list = None, exercise: str = exercise_1, exercise_name: str = 'исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо.'):
         api_response = client.beta.threads.create(
             messages=[
                 {"role": "assistant", "content": 'Какими характеристиками должен обладать ChatGPT?'},
                 {"role": "user", "content": user_message_1},
                 {"role": "assistant", "content": 'Что-нибудь еще, что ChatGPT должен знать о вас?'},
                 {"role": "user", "content": user_message_2},
-                {"role": "assistant", "content": 'Я отлично, отправьте мне первую интрукцию'},
-                {"role": "user", "content": user_message_3},
-                {"role": "assistant", "content": 'Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.'},
-                {"role": "user", "content": message_text}
+                {"role": "assistant", "content": 'Отлично, отправьте мне первую интрукцию'},
+                {"role": "user", "content": exercise},
+                {"role": "assistant", "content": f'Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся {exercise_name}. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.'}
             ]
         )
         serializer = OpenAIThreadSerializer(data=api_response.dict())

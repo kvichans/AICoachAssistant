@@ -6,6 +6,9 @@ from time import sleep
 
 from aiogram.enums import ChatAction
 from aiogram.types import FSInputFile
+from openai import vector_stores
+
+from CoachAsistant.docs.variables import exercise_1, exercise_2
 
 # 1) Добавляем в PYTHONPATH корень проекта (/home/Dev/AICoachAssistant),
 #    чтобы Python нашёл пакет AICoachAssistant и приложение CoachAsistant.
@@ -56,6 +59,10 @@ dp = Dispatcher()
 router = Router()
 
 assistant = OpenAIAssistant.objects.first()
+
+button_hi = [[KeyboardButton(text='/clearall')], [KeyboardButton(text='/ограничивающие_убеждения')], [KeyboardButton(text='/исследование_жизненных_ценностей')]]
+greet_kb1 = ReplyKeyboardMarkup(keyboard=button_hi, resize_keyboard=True)
+
 if not assistant:
     assistant = OpenAIAssistantService().create_assistant()
 
@@ -66,9 +73,9 @@ def register_middlewares(dp: Dispatcher) -> None:
 async def cmd_start(message: types.Message):
     try:
         await sync_to_async(TelegramUser.objects.get)(chat_id=message.chat.id)
-        await message.reply('Продолжим?')
+        await message.reply('Продолжим?', reply_markup=greet_kb1,)
     except:
-        await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.')
+        await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.', reply_markup=greet_kb1,)
 
 
 @dp.message(F.text, Command('clearall'))
@@ -76,11 +83,43 @@ async def my_handler(message: types.Message):
     try:
         thread = OpenAIThreadService()
         await sync_to_async(thread.clear_tread)(message.chat.id)
-        await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.')
+        await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.', reply_markup=greet_kb1,)
     except Exception as e:
-        await message.reply(f'Мы не можем начать заново, потому что не были знакомы...  Меня зовут AI Coach, займёмся исследованием ваших жизненных ценностей?\n\nЧтобы было удобнее, вы можете записывать голосовые сообщения.')
+        await message.reply(f'Мы не можем начать заново, потому что не были знакомы...  Меня зовут AI Coach, займёмся исследованием ваших жизненных ценностей?\n\nЧтобы было удобнее, вы можете записывать голосовые сообщения.', reply_markup=greet_kb1,)
 
+@dp.message(F.text, Command('исследование_жизненных_ценностей'))
+async def protective_beliefs(message: types.Message):
+    thread_service = OpenAIThreadService(assistant_id=assistant.id)
+    user_service = TelegramUserService(chat_id=message.chat.id)
+    username = message.from_user.username or None
+    first_name = message.from_user.first_name or None
+    last_name = message.from_user.last_name or None
+    try:
+        await sync_to_async(thread_service.clear_tread)(message.chat.id)
+    except:
+        pass
+    await sync_to_async(thread_service.create_thread)(exercise=exercise_1, exercise_name='исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо.')
+    await sync_to_async(user_service.create_or_update_user)(assistant_id=thread_service.assistant_id,
+                                                            thread_id=thread_service.thread_id, username=username,
+                                                            first_name=first_name, last_name=last_name)
+    await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.')
 
+@dp.message(F.text, Command('ограничивающие_убеждения'))
+async def protective_beliefs(message: types.Message):
+    thread_service = OpenAIThreadService(assistant_id=assistant.id)
+    user_service = TelegramUserService(chat_id=message.chat.id)
+    username = message.from_user.username or None
+    first_name = message.from_user.first_name or None
+    last_name = message.from_user.last_name or None
+    try:
+        await sync_to_async(thread_service.clear_tread)(message.chat.id)
+    except:
+        pass
+    await sync_to_async(thread_service.create_thread)(exercise=exercise_2, exercise_name='вашими ограничивающими убеждениями')
+    await sync_to_async(user_service.create_or_update_user)(assistant_id=thread_service.assistant_id,
+                                                            thread_id=thread_service.thread_id, username=username,
+                                                            first_name=first_name, last_name=last_name)
+    await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся вашими ограничивающими убеждениями. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.')
 
 @dp.message(F.voice)
 async def voice_handler(message: types.Message):
@@ -125,11 +164,12 @@ async def voice_handler(message: types.Message):
             await sync_to_async(thread_service.add_message_tread)(user_text)
         else:
             thread_service = OpenAIThreadService(assistant_id=assistant.id)
-            await sync_to_async(thread_service.create_thread)(user_text, VECTOR_STORE_ID)
+            await sync_to_async(thread_service.create_thread)(VECTOR_STORE_ID)
             # Синхронный вызов create_thread оборачиваем
             await sync_to_async(user_service.create_or_update_user)(assistant_id=thread_service.assistant_id,
                                                                     thread_id=thread_service.thread_id, username=username,
                                                                     first_name=first_name, last_name=last_name)
+            await sync_to_async(thread_service.add_message_tread)(user_text)
 
         # Синхронный вызов run_tread оборачиваем
         run = await sync_to_async(thread_service.run_tread)()
@@ -204,6 +244,7 @@ async def handle_message(message: types.Message):
         user_service = TelegramUserService(chat_id=message.chat.id)
         thread_obj = await sync_to_async(user_service.get_thread_by_user)()
         thread_id = thread_obj.id if thread_obj else None
+        print(thread_id)
 
 
         if thread_id:
@@ -215,11 +256,12 @@ async def handle_message(message: types.Message):
             await sync_to_async(thread_service.add_message_tread)(user_text)
         else:
             thread_service = OpenAIThreadService(assistant_id=assistant.id)
-            await sync_to_async(thread_service.create_thread)(user_text, VECTOR_STORE_ID)
+            await sync_to_async(thread_service.create_thread)(VECTOR_STORE_ID)
             # Синхронный вызов create_thread оборачиваем
             await sync_to_async(user_service.create_or_update_user)(assistant_id=thread_service.assistant_id,
                                                                     thread_id=thread_service.thread_id, username=username,
                                                                     first_name=first_name, last_name=last_name)
+            await sync_to_async(thread_service.add_message_tread)(user_text)
 
         # Синхронный вызов run_tread оборачиваем
         run = await sync_to_async(thread_service.run_tread)()
@@ -234,7 +276,7 @@ async def handle_message(message: types.Message):
             answer = messages_resp.data[0].content[0].text.value
             clear_answer = re.sub(r'【\d+:\d+†[^】]+】', '', answer)
 
-            button_hi = [[KeyboardButton(text='/clearall')]]
+            button_hi = [[KeyboardButton(text='/clearall')], [KeyboardButton(text='/ограничивающие_убеждения')], [KeyboardButton(text='/исследование_жизненных_ценностей')]]
             greet_kb1 = ReplyKeyboardMarkup(
                 keyboard=button_hi,
                 resize_keyboard=True
