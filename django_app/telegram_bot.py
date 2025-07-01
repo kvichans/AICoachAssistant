@@ -21,7 +21,7 @@ sys.path.append(PROJECT_ROOT)
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from CoachAsistant.docs.variables import exercise_1, exercise_2
+from CoachAsistant.docs.variables import exercise_1, exercise_2, exercise_3, exercise_4, exercise_5
 from CoachAsistant.servises import OpenAIAssistantService, OpenAIThreadService, TelegramUserService
 from CoachAsistant.models import OpenAIAssistant, TelegramUser
 
@@ -45,7 +45,10 @@ def get_default_keyboard():
     buttons = [
         [KeyboardButton(text='/clearall')],
         [KeyboardButton(text='/ограничивающие_убеждения')],
-        [KeyboardButton(text='/исследование_жизненных_ценностей')]
+        [KeyboardButton(text='/исследование_жизненных_ценностей')],
+        [KeyboardButton(text='/воплощение_ценностей')],
+        [KeyboardButton(text='/cкрытые_стратегии')],
+        [KeyboardButton(text='/исследование_гениальности')],
     ]
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
@@ -79,36 +82,36 @@ async def exercise_handler(message, exercise, description):
         f'Здравствуйте! Меня зовут AI Coach, и сегодня мы займёмся {description}. Начнем?\n\nВы можете записывать голосовые сообщения, я тоже отвечу голосом.'
     )
 
-class MessageProcessor:
-    def __init__(self, assistant):
-        self.assistant = assistant
-
-    async def _get_or_create_thread(self, message):
-        user_svc = TelegramUserService(chat_id=message.chat.id)
-        thread_obj = await sync_to_async(user_svc.get_thread_by_user)()
-        if thread_obj:
-            ts = OpenAIThreadService(thread_id=thread_obj.id, assistant_id=self.assistant.id)
-        else:
-            ts = OpenAIThreadService(assistant_id=self.assistant.id)
-            await sync_to_async(ts.create_thread)(VECTOR_STORE_ID)
-            await sync_to_async(user_svc.create_or_update_user)(
-                assistant_id=ts.assistant_id,
-                thread_id=ts.thread_id,
-                username=message.from_user.username,
-                first_name=message.from_user.first_name,
-                last_name=message.from_user.last_name
-            )
-        return ts
-
-    async def process(self, message, user_text: str) -> str:
-        """Общая логика обработки текста."""
-        ts = await self._get_or_create_thread(message)
-        await sync_to_async(ts.add_message_tread)(user_text)
-        run = await sync_to_async(ts.run_tread)()
-        if run.status != 'completed':
-            return f'Статус запроса: {run.status}'
-        msgs = await sync_to_async(client.beta.threads.messages.list)(thread_id=ts.thread_id)
-        return re.sub(r'【\d+:\d+†[^】]+】', '', msgs.data[0].content[0].text.value)
+# class MessageProcessor:
+#     def __init__(self, assistant):
+#         self.assistant = assistant
+#
+#     async def _get_or_create_thread(self, message):
+#         user_svc = TelegramUserService(chat_id=message.chat.id)
+#         thread_obj = await sync_to_async(user_svc.get_thread_by_user)()
+#         if thread_obj:
+#             ts = OpenAIThreadService(thread_id=thread_obj.id, assistant_id=self.assistant.id)
+#         else:
+#             ts = OpenAIThreadService(assistant_id=self.assistant.id)
+#             await sync_to_async(ts.create_thread)(VECTOR_STORE_ID)
+#             await sync_to_async(user_svc.create_or_update_user)(
+#                 assistant_id=ts.assistant_id,
+#                 thread_id=ts.thread_id,
+#                 username=message.from_user.username,
+#                 first_name=message.from_user.first_name,
+#                 last_name=message.from_user.last_name
+#             )
+#         return ts
+#
+#     async def process(self, message, user_text: str) -> str:
+#         """Общая логика обработки текста."""
+#         ts = await self._get_or_create_thread(message)
+#         await sync_to_async(ts.add_message_tread)(user_text)
+#         run = await sync_to_async(ts.run_tread)()
+#         if run.status != 'completed':
+#             return f'Статус запроса: {run.status}'
+#         msgs = await sync_to_async(client.beta.threads.messages.list)(thread_id=ts.thread_id)
+#         return re.sub(r'【\d+:\d+†[^】]+】', '', msgs.data[0].content[0].text.value)
 
 # === Command handlers ===
 @dp.message(CommandStart())
@@ -132,6 +135,18 @@ async def values_handler(message: types.Message):
 @dp.message(Command('ограничивающие_убеждения'))
 async def beliefs_handler(message: types.Message):
     await exercise_handler(message, exercise_2, 'вашими ограничивающими убеждениями')
+
+@dp.message(Command('воплощение_ценностей'))
+async def beliefs_handler(message: types.Message):
+    await exercise_handler(message, exercise_3, 'воплощениями ваших ценностей')
+
+@dp.message(Command('cкрытые_стратегии'))
+async def beliefs_handler(message: types.Message):
+    await exercise_handler(message, exercise_4, 'вашими скрытыми стратегиями')
+
+@dp.message(Command('исследование_гениальности'))
+async def beliefs_handler(message: types.Message):
+    await exercise_handler(message, exercise_5, 'исследованием вашей уникальной гениальности')
 
 # === Voice handler ===
 @dp.message(F.voice)
