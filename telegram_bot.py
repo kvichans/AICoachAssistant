@@ -1,4 +1,6 @@
 import os
+from pprint import pprint
+
 import requests
 import asyncio
 
@@ -34,6 +36,7 @@ def get_commands():
     try:
         resp = requests.get(f'{BASE_URL}/exercises/')
         resp = resp.json()
+        pprint(resp)
         exercises = [i.get('name') for i in resp]
         return exercises
     except Exception as e:
