@@ -36,9 +36,9 @@ def get_commands():
     try:
         resp = requests.get(f'{BASE_URL}/exercises/')
         resp = resp.json()
-        if not resp:
-            resp=['None']
         exercises = [i.get('name') for i in resp]
+        if not resp:
+            exercises=['None']
         return exercises
     except Exception as e:
         raise e
