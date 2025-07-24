@@ -12,6 +12,7 @@ class TimeStampedModel(models.Model):
 class RoleChoice(models.TextChoices):
     DEVELOPER = 'developer', _('Developer')
     USER = 'user', _('User')
+    ASSISTANT = 'assistant', _('Assistant')
 
 class OpenAIAssistant(models.Model):
     '''
@@ -172,6 +173,11 @@ class Chat(models.Model):
         blank=False,
         on_delete=models.CASCADE,
         related_name='chat'
+    )
+    exercise =models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
     )
 
 

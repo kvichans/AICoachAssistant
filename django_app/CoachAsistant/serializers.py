@@ -78,7 +78,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ['id', 'user']
+        fields = ['id', 'user', 'exercise']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -108,6 +108,11 @@ class GenerateTextSerializer(serializers.Serializer):
     text = serializers.CharField(
         help_text='Текст сообщения для генерации ответа',
         trim_whitespace=True
+    )
+    exercise = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text='Название упражнения (необязательно)'
     )
 
     def validate_user_id(self, value):

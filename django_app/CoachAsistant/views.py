@@ -19,9 +19,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 class UserViewSet(
-    mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
     """
@@ -33,14 +31,14 @@ class UserViewSet(
 
 class ChatViewSet(
     mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
 
-class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
+class ExerciseViewSet(mixins.ListModelMixin,
+                      viewsets.GenericViewSet):
     """
     ViewSet для просмотра списка упражнений и деталей.
     Только методы list и retrieve.
@@ -69,9 +67,12 @@ class GenerateTextView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user_service = UserService(serializer.validated_data['chat_id'])
+        exercise = serializer.validated_data.get('exercise')
         user = user_service.get_user()
 
         chat, _ = Chat.objects.get_or_create(user=user)
+        if exercise:
+            chat.exercise.add(exercise)
 
         message_service = MessageService(chat)
 

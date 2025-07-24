@@ -209,17 +209,30 @@ class TextGenerationService:
     Сервис для генерации текста через OpenAI.
     """
     @staticmethod
-    def generate(message_service: MessageService, content) -> ChatCompletionMessage | Exception:
+    def generate(message_service: MessageService, content) -> str:
         message_service.create(RoleChoice.USER, content)
         message_history = message_service.get_chat_history()
         messages = [{"role": message.role, "content": message.content} for message in message_history]
+
+        exercise = message_service.chat.exercise
+        if exercise:
+            ex = Exercise.objects.filter(name=exercise).first()
+            messages.insert(0, {"role": 'assistant', "content": f"Давай приступим к технике {ex.name}?"})
+            messages.insert(0, {"role": 'user', "content": ex.content})
+
+        messages.insert(0, {"role": 'user', "content": user_message_2})
+        messages.insert(0, {"role": 'user', "content": user_message_1})
+        messages.insert(0, {"role": 'developer', "content": instructions})
+
+        pprint(messages)
         try:
             completion = client.chat.completions.create(
                 model = "gpt-4o-mini",
                 messages = messages
             )
-            pprint(completion)
-            return completion.choices[0].message.content
+            answer = completion.choices[0].message.content
+            message_service.create(RoleChoice.ASSISTANT, answer)
+            return answer
         except Exception as e:
             return e
 

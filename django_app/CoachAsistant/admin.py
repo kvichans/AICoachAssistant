@@ -1,7 +1,7 @@
 from django.contrib import admin
 import os
 
-from .models import OpenAIAssistant, OpenAIThread, User
+from .models import OpenAIAssistant, OpenAIThread, User, Exercise, Chat
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -92,6 +92,32 @@ class UserAdmin(admin.ModelAdmin):
                 'paid',
                 'assistant',
                 'thread',
+            ),
+        }),
+    )
+
+@admin.register(Exercise)
+class ExerciseAdmin(admin.ModelAdmin):
+    list_display = ('order', 'name')
+    search_fields = ('id','name')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'name',
+                'order',
+                'content',
+            ),
+        }),
+    )
+
+@admin.register(Chat)
+class ChatAdmin(admin.ModelAdmin):
+    list_display = ('user', 'exercise')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'user',
+                'exercise',
             ),
         }),
     )
