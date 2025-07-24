@@ -205,3 +205,7 @@ class Exercise(models.Model):
         null=False,
         blank=False
     )
+    order = models.IntegerField(
+        null=False,
+        blank=False
+    )

@@ -10,8 +10,8 @@ from drf_yasg import openapi
 from django.http import FileResponse, Http404
 
 
-from .models import User, Chat
-from .serializers import UserSerializer, GenerateTextSerializer, GenerateAudioSerializer, ChatSerializer
+from .models import User, Chat, Exercise
+from .serializers import UserSerializer, GenerateTextSerializer, GenerateAudioSerializer, ChatSerializer, ExerciseSerializer
 from .servises import AudioGenerationService, TextGenerationService, OpenAIAPIService
 from .servises import MessageService, UserService, ogg_bytes_to_mp3_bytes
 
@@ -39,6 +39,14 @@ class ChatViewSet(
 ):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
+
+class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet для просмотра списка упражнений и деталей.
+    Только методы list и retrieve.
+    """
+    queryset = Exercise.objects.all().order_by('order')
+    serializer_class = ExerciseSerializer
 
 
 class GenerateTextView(APIView):

@@ -2,7 +2,7 @@ import datetime
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import OpenAIAssistant, OpenAIThread, User, Chat, Message
+from .models import OpenAIAssistant, OpenAIThread, User, Chat, Message, Exercise
 
 
 
@@ -142,3 +142,11 @@ class GenerateAudioSerializer(serializers.Serializer):
         if not User.objects.filter(chat_id=value).exists():
             raise serializers.ValidationError('Пользователь с таким chat_id не найден.')
         return value
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Exercise.
+    """
+    class Meta:
+        model = Exercise
+        fields = ['id', 'name', 'content', 'order']
