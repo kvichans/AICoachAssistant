@@ -5,7 +5,7 @@ services:
     image: postgres:15
     restart: always
     env_file:
-      - .env
+      - ./.env
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -29,6 +29,7 @@ services:
     volumes:
       - ./django_app:/app
       - ./.env:/app/.env:ro
+      - ./telegram_bot.py:/app/telegram_bot.py
 
 volumes:
   pgdata:

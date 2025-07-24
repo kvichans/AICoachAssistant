@@ -24,7 +24,7 @@ def get_default_keyboard():
     try:
         resp=requests.get(f'{BASE_URL}/exercises/')
         resp = resp.json()
-        buttons = [[KeyboardButton(text=f'/{i.get('name')}')] for i in resp]
+        buttons = [[KeyboardButton(text=f'/{i.get("name")}')] for i in resp]
         buttons.append([KeyboardButton(text='/clearall')])
         return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
     except Exception as e:
