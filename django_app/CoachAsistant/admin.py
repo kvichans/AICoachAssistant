@@ -1,7 +1,7 @@
 from django.contrib import admin
 import os
 
-from .models import OpenAIAssistant, OpenAIThread, TelegramUser
+from .models import OpenAIAssistant, OpenAIThread, User
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -75,8 +75,8 @@ class OpenAIThreadAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(TelegramUser)
-class TelegramUserAdmin(admin.ModelAdmin):
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
     list_display = ('chat_id', 'username', 'first_name', 'last_name', 'paid', 'assistant', 'thread')
     search_fields = ('chat_id', 'username', 'first_name', 'last_name')
     list_filter = ('paid', 'assistant')

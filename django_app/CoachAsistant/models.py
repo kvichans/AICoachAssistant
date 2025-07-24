@@ -1,5 +1,17 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        ordering = ['created_at']
+
+class RoleChoice(models.TextChoices):
+    DEVELOPER = 'developer', _('Developer')
+    USER = 'user', _('User')
 
 class OpenAIAssistant(models.Model):
     '''
@@ -99,11 +111,10 @@ class OpenAIThread(models.Model):
         help_text='Дополнительная структурированная информация (до 16 пар ключ-значение)'
     )
 
-# Create your models here.
-class TelegramUser(models.Model):
+
+class User(models.Model):
     """
-    Модель для хранения пользователя Telegram,
-    связанного с конкретным OpenAIAssistant.
+    Модель для хранения пользователя
     """
     chat_id = models.BigIntegerField(
         primary_key=True,
@@ -139,8 +150,10 @@ class TelegramUser(models.Model):
     )
     assistant = models.ForeignKey(
         OpenAIAssistant,
+        null=True,
+        blank=True,
         on_delete=models.CASCADE,
-        related_name="telegram_users",
+        related_name="users",
         help_text='Ассистент, связанный с этим Telegram-пользователем'
     )
     thread = models.ForeignKey(
@@ -148,8 +161,47 @@ class TelegramUser(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='telegram_users'
+        related_name='users'
     )
 
-    def __str__(self):
-        return f"TelegramUser {self.chat_id} → {self.assistant.name}"
+
+class Chat(models.Model):
+    user = models.ForeignKey(
+        User,
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE,
+        related_name='chat'
+    )
+
+
+class Message(TimeStampedModel):
+    chat = models.ForeignKey(
+        Chat,
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    role = models.CharField(
+        max_length=50,
+        null=False,
+        blank=False,
+        choices=RoleChoice.choices
+    )
+    content = models.TextField(
+        null=False,
+        blank=False
+    )
+
+
+class Exercise(models.Model):
+    name = models.CharField(
+        max_length=255,
+        null=False,
+        blank=False
+    )
+    content = models.TextField(
+        null=False,
+        blank=False
+    )

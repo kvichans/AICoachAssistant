@@ -1,19 +1,79 @@
 import os
 import json
-from .docs.variables import user_message_1, user_message_2, instructions, user_message_3
+from pprint import pprint
+from io import BytesIO
 
-from .models import OpenAIThread, TelegramUser, OpenAIAssistant
-from .serializers import OpenAIAssistantSerializer, OpenAIThreadSerializer
+from openai.types.chat import ChatCompletionMessage
+
+from .docs.variables import user_message_1, user_message_2, instructions, user_message_3
+from django.shortcuts import get_object_or_404
+
+from .models import OpenAIThread, User, OpenAIAssistant, Chat, Message, Exercise, RoleChoice
+from .serializers import OpenAIAssistantSerializer, OpenAIThreadSerializer, MessageSerializer
 
 from openai import OpenAI
 from dotenv import load_dotenv
+from pydub import AudioSegment
 
 
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOCS_PATH = os.path.join(BASE_DIR, "docs", "default_instructions.json")
+
+def ogg_bytes_to_mp3_bytes(ogg_bytes: bytes, bitrate: str = "192k"):
+    # 1) Загружаем OGG из памяти
+    ogg_buffer = BytesIO(ogg_bytes)
+    audio = AudioSegment.from_file(ogg_buffer, format="ogg")
+
+    # 2) Конвертируем в MP3 в другой буфер
+    mp3_buffer = BytesIO()
+    audio.export(mp3_buffer, format="mp3", bitrate=bitrate)
+
+    # 3) Сбрасываем курсор и возвращаем байты
+    mp3_buffer.seek(0)
+    mp3_buffer.name = "audio.mp3"
+    return mp3_buffer
+
+class OpenAIAPIService:
+
+    def __init__(self, token):
+        self.client = OpenAI(api_key=token)
+
+    def speach_to_text(self, speech: BytesIO):
+        speech.seek(0)
+        transcript = self.client.audio.transcriptions.create(
+            model="gpt-4o-transcribe",
+            file=speech
+        )
+        return transcript.text
+
+    def text_to_speach(self, text_for_speach):
+        bio = BytesIO()
+        with self.client.audio.speech.with_streaming_response.create(
+                model="gpt-4o-mini-tts",
+                voice="alloy",
+                input=text_for_speach,
+                instructions="""
+                Accent: neutral Russian, without pronounced regional characteristics
+                Emotional range: warm, empathetic, supportive
+                Intonation:
+                  – question_end: slight rise in intonation
+                  – statement: steady, calm
+                Impressions: confident coach-mentor, gentle inspirer
+                Speed of speech: very fast
+                Tone: calm, friendly, trust-building
+                Whispering: subtle, quiet inflections on emphatic phrases
+                """,
+        ) as response:
+            for chunk in response.iter_bytes(chunk_size=32 * 1024):
+                bio.write(chunk)
+
+        bio.name = 'response.mp3'
+        bio.seek(0)
+        return bio
 
 
 class OpenAIAssistantService:
@@ -72,7 +132,7 @@ class OpenAIThreadService:
 
     def clear_tread(self, chat_id):
         try:
-            user = TelegramUser.objects.get(chat_id=chat_id)
+            user = User.objects.get(chat_id=chat_id)
             client.beta.threads.delete(user.thread.id)
             user.thread.delete()
             return 'Ok'
@@ -80,15 +140,15 @@ class OpenAIThreadService:
             raise e
 
 
-class TelegramUserService:
+class UserService:
     '''
     Сервис для работы с моделью TelegramUser через сериализатор.
     '''
-    def __init__(self, **kwargs):
-        self.chat_id = kwargs.get("chat_id")
+    def __init__(self, chat_id):
+        self.chat_id = chat_id
 
-    def create_or_update_user(self, assistant_id, thread_id, username=None, first_name=None, last_name=None):
-        user, created = TelegramUser.objects.update_or_create(
+    def create_or_update_user(self, assistant_id=None, thread_id=None, username=None, first_name=None, last_name=None):
+        user, created = User.objects.update_or_create(
             chat_id=self.chat_id,
             defaults={
                 'assistant_id': assistant_id,
@@ -101,12 +161,73 @@ class TelegramUserService:
         return
 
     def get_user(self):
-        return TelegramUser.objects.get(chat_id=self.chat_id)
+        instance, _ = User.objects.get_or_create(chat_id=self.chat_id)
+        return instance
 
     def get_thread_by_user(self):
         try:
-            user = TelegramUser.objects.get(pk=self.chat_id)
+            user = User.objects.get(pk=self.chat_id)
             thread = user.thread  # здесь – связанный OpenAIThread
             return thread
-        except TelegramUser.DoesNotExist:
+        except User.DoesNotExist:
             return None
+
+class ChatService:
+
+    def __init__(self, user_id, chat_id = None, message=None):
+        self.user_id = user_id
+
+    def create_chat(self):
+        return Chat.objects.update_or_create(chat_id=self.user_id)
+
+    def get_chat(self):
+        return Chat.objects.update_or_create(chat_id=self.user_id)
+
+    def delete_chat(self):
+        Chat.objects.filter(chat_id=self.user_id).delete()
+
+class MessageService:
+    def __init__(self, chat: Chat):
+        self.chat = chat
+
+    def create(self, role: str, content: str) -> Message:
+        """
+        Создать новое сообщение.
+        """
+        message = self.chat.messages.create(
+            role=role,
+            content=content
+        )
+        message.save()
+        return message
+
+    def get_chat_history(self):
+        return self.chat.messages.order_by('created_at')
+
+class TextGenerationService:
+    """
+    Сервис для генерации текста через OpenAI.
+    """
+    @staticmethod
+    def generate(message_service: MessageService, content) -> ChatCompletionMessage | Exception:
+        message_service.create(RoleChoice.USER, content)
+        message_history = message_service.get_chat_history()
+        messages = [{"role": message.role, "content": message.content} for message in message_history]
+        try:
+            completion = client.chat.completions.create(
+                model = "gpt-4o-mini",
+                messages = messages
+            )
+            pprint(completion)
+            return completion.choices[0].message.content
+        except Exception as e:
+            return e
+
+
+class AudioGenerationService:
+    """
+    Сервис для генерации аудио из текста через OpenAI TTS.
+    """
+    @staticmethod
+    def generate(user_id: int, text: str) -> str:
+        pass

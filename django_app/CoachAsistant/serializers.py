@@ -2,7 +2,7 @@ import datetime
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import OpenAIAssistant, OpenAIThread, TelegramUser
+from .models import OpenAIAssistant, OpenAIThread, User, Chat, Message
 
 
 
@@ -60,3 +60,85 @@ class OpenAIThreadSerializer(serializers.ModelSerializer):
             "created_at": {"required": False, "allow_null": True},
             "metadata": {"required": False},
         }
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Message.
+    """
+    class Meta:
+        model = Message
+        fields = ['id', 'chat', 'role', 'content', 'created_at', 'updated_at']
+
+
+class ChatSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Chat с вложенными сообщениями.
+    """
+
+    class Meta:
+        model = Chat
+        fields = ['id', 'user']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели User.
+    Включает вложенные ассистента, тред и чаты.
+    """
+    chat = ChatSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'chat_id',
+            'title',
+            'username',
+            'first_name',
+            'last_name',
+            'paid',
+            'chat'
+        ]
+
+
+class GenerateTextSerializer(serializers.Serializer):
+    chat_id = serializers.IntegerField(
+        help_text='ID Telegram-чата пользователя'
+    )
+    text = serializers.CharField(
+        help_text='Текст сообщения для генерации ответа',
+        trim_whitespace=True
+    )
+
+    def validate_user_id(self, value):
+        """
+        Проверяем, что пользователь с таким chat_id существует.
+        """
+        if not User.objects.filter(chat_id=value).exists():
+            raise serializers.ValidationError('Пользователь с таким user_id не найден.')
+        return value
+
+    def validate_text(self, value):
+        """
+        Запрещаем пустую строку.
+        """
+        if not value.strip():
+            raise serializers.ValidationError('Текст не может быть пустым.')
+        return value
+
+class GenerateAudioSerializer(serializers.Serializer):
+    """
+    Сериализатор для генерации аудио из текста.
+    Принимает user_id и текст для озвучки.
+    """
+    user_id = serializers.IntegerField(
+        help_text='ID Telegram-чата пользователя'
+    )
+    file = serializers.FileField(
+        help_text='Загружаемый файл'
+    )
+
+    def validate_user_id(self, value):
+        if not User.objects.filter(chat_id=value).exists():
+            raise serializers.ValidationError('Пользователь с таким chat_id не найден.')
+        return value
