@@ -29,7 +29,15 @@ services:
     volumes:
       - ./django_app:/app
       - ./.env:/app/.env:ro
-      - ./telegram_bot.py:/app/telegram_bot.py
+
+  bot:
+    build:
+      context: ./telegram_bot
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    depends_on:
+      - web
 
 volumes:
   pgdata:

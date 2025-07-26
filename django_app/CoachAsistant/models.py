@@ -9,10 +9,17 @@ class TimeStampedModel(models.Model):
         abstract = True
         ordering = ['created_at']
 
+
 class RoleChoice(models.TextChoices):
     DEVELOPER = 'developer', _('Developer')
     USER = 'user', _('User')
     ASSISTANT = 'assistant', _('Assistant')
+
+
+class StatusChoice(models.TextChoices):
+    ACTIVE = 'active', _('Aactive')
+    INACTIVE = 'inactive', _('Inactive')
+
 
 class OpenAIAssistant(models.Model):
     '''
@@ -214,4 +221,15 @@ class Exercise(models.Model):
     order = models.IntegerField(
         null=False,
         blank=False
+    )
+
+class Instruction(models.Model):
+    text = models.TextField(
+        null=False,
+        blank=False
+    )
+    status = models.CharField(
+        max_length=50,
+        choices=StatusChoice.choices,
+        default=StatusChoice.ACTIVE
     )

@@ -1,7 +1,7 @@
 from django.contrib import admin
 import os
 
-from .models import OpenAIAssistant, OpenAIThread, User, Exercise, Chat
+from .models import OpenAIAssistant, OpenAIThread, User, Exercise, Chat, Instruction
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -41,7 +41,7 @@ class OpenAIAssistantAdmin(admin.ModelAdmin):
         client.beta.assistants.update(
             assistant_id=obj.id,
             name=obj.name,
-            instructions=obj.instructions or "",
+            instructions=obj.default_instructions or "",
             model=obj.model,
             tools=obj.tools or [],
             tool_resources=obj.tool_resources or {},
@@ -118,6 +118,18 @@ class ChatAdmin(admin.ModelAdmin):
             'fields': (
                 'user',
                 'exercise',
+            ),
+        }),
+    )
+
+@admin.register(Instruction)
+class InstructionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'status')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'text',
+                'status',
             ),
         }),
     )

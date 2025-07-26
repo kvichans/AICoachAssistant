@@ -1,19 +1,13 @@
 import os
-import json
 from pprint import pprint
 from io import BytesIO
-
-from openai.types.chat import ChatCompletionMessage
-
-from .docs.variables import user_message_1, user_message_2, instructions, user_message_3
-from django.shortcuts import get_object_or_404
-
-from .models import OpenAIThread, User, OpenAIAssistant, Chat, Message, Exercise, RoleChoice
-from .serializers import OpenAIAssistantSerializer, OpenAIThreadSerializer, MessageSerializer
-
 from openai import OpenAI
 from dotenv import load_dotenv
 from pydub import AudioSegment
+
+from .docs.variables import user_message_1, user_message_2, default_instructions
+
+from .models import User, Chat, Message, Exercise, RoleChoice, Instruction, StatusChoice
 
 
 load_dotenv()
@@ -74,70 +68,6 @@ class OpenAIAPIService:
         bio.name = 'response.mp3'
         bio.seek(0)
         return bio
-
-
-class OpenAIAssistantService:
-    def create_assistant(self):
-
-        api_response = client.beta.assistants.create(
-            instructions=instructions,
-            name="CoachAssistant",
-            model="gpt-4o-mini",
-            top_p=0.9,
-            temperature=0.7
-        )
-
-        serializer = OpenAIAssistantSerializer(data=api_response.dict())
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        return instance
-
-class OpenAIThreadService:
-    def __init__(self, assistant_id=None, thread_id=None):
-        self.assistant_id = assistant_id
-        self.thread_id = thread_id
-
-    def create_thread(self, message_text: str, vector_store_id: list):
-        api_response = client.beta.threads.create(
-            messages=[
-                {"role": "assistant", "content": 'Какими характеристиками должен обладать ChatGPT?'},
-                {"role": "user", "content": user_message_1},
-                {"role": "assistant", "content": 'Что-нибудь еще, что ChatGPT должен знать о вас?'},
-                {"role": "user", "content": user_message_2},
-                {"role": "assistant", "content": 'Я отлично, отправьте мне первую интрукцию'},
-                {"role": "user", "content": user_message_3},
-                {"role": "assistant", "content": 'Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.'},
-                {"role": "user", "content": message_text}
-            ]
-        )
-        serializer = OpenAIThreadSerializer(data=api_response.dict())
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        self.thread_id = instance.id
-        return instance
-
-
-    def  add_message_tread(self, user_text: str):
-        return client.beta.threads.messages.create(
-                thread_id=self.thread_id,
-                role="user",
-                content=user_text
-            )
-
-    def run_tread(self):
-        return client.beta.threads.runs.create_and_poll(
-        thread_id=self.thread_id,
-        assistant_id=self.assistant_id
-    )
-
-    def clear_tread(self, chat_id):
-        try:
-            user = User.objects.get(chat_id=chat_id)
-            client.beta.threads.delete(user.thread.id)
-            user.thread.delete()
-            return 'Ok'
-        except Exception as e:
-            raise e
 
 
 class UserService:
@@ -220,9 +150,15 @@ class TextGenerationService:
             messages.insert(0, {"role": 'assistant', "content": f"Давай приступим к технике {ex.name}?"})
             messages.insert(0, {"role": 'user', "content": ex.content})
 
+        instruction = Instruction.objects.filter(status=StatusChoice.ACTIVE).first()
+        if not instruction:
+            instruction = Instruction.objects.create(
+                text=default_instructions,
+            )
+
         messages.insert(0, {"role": 'user', "content": user_message_2})
         messages.insert(0, {"role": 'user', "content": user_message_1})
-        messages.insert(0, {"role": 'developer', "content": instructions})
+        messages.insert(0, {"role": 'developer', "content": instruction.text})
 
         pprint(messages)
         try:
@@ -235,12 +171,3 @@ class TextGenerationService:
             return answer
         except Exception as e:
             return e
-
-
-class AudioGenerationService:
-    """
-    Сервис для генерации аудио из текста через OpenAI TTS.
-    """
-    @staticmethod
-    def generate(user_id: int, text: str) -> str:
-        pass

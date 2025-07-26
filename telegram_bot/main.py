@@ -35,13 +35,12 @@ def get_commands():
     try:
         resp = requests.get(f'{BASE_URL}/exercises/')
         resp = resp.json()
-        exercises = [i.get('name') for i in resp]
+        exercises = [f'/{i.get("name")}' for i in resp]
         if not resp:
             exercises=['None']
         return exercises
     except Exception as e:
         raise e
-
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
@@ -57,44 +56,46 @@ async def cmd_start(message: types.Message):
         await message.reply(f'Произошла какая-то ошибка: {e}', reply_markup=get_default_keyboard())
 
 
-@dp.message(F.text, Command('clearall'))
+@dp.message(F.text.startswith('/'))
 async def my_handler(message: types.Message):
-    try:
-        resp = requests.get(f'{BASE_URL}/users/{message.chat.id}/')
-        if resp.status_code != 200:
-            await message.reply(
-                f'Мы не можем начать заново, потому что не были знакомы...  Меня зовут AI Coach, займёмся исследованием ваших жизненных ценностей?\n\nЧтобы было удобнее, вы можете записывать голосовые сообщения.',
-            reply_markup=get_default_keyboard())
-        else:
+    commands = get_commands()
+    print(commands)
+    if message.text == '/clearall':
+        try:
+            resp = requests.get(f'{BASE_URL}/users/{message.chat.id}/')
+            if resp.status_code != 200:
+                await message.reply(
+                    f'Мы не можем начать заново, потому что не были знакомы...  Меня зовут AI Coach, займёмся исследованием ваших жизненных ценностей?\n\nЧтобы было удобнее, вы можете записывать голосовые сообщения.',
+                reply_markup=get_default_keyboard())
+            else:
+                chat = resp.json().get('chat')
+                if chat:
+                    chat_id = chat[0].get('id')
+                    resp=requests.delete(f'{BASE_URL}/chats/{chat_id}/')
+                    await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.',
+                                        reply_markup=get_default_keyboard())
+        except Exception as e:
+            await message.reply(f'Произошла ошибка при удалении: {e}')
+    elif message.text in commands:
+        try:
+            resp = requests.get(f'{BASE_URL}/users/{message.chat.id}/')
             chat = resp.json().get('chat')
+
             if chat:
                 chat_id = chat[0].get('id')
-                resp=requests.delete(f'{BASE_URL}/chats/{chat_id}/')
-                await message.reply('Здравствуйте! Меня зовут AI Coach, и сегодня мы вместе займёмся исследованием ваших жизненных ценностей. Это важный и интересный процесс, который поможет вам лучше понять, что для вас действительно ценно и значимо. Начнем?\n\nЧтобы было удобнее вы можете записывать голосовые сообщения, я тоже буду отвечать голосом.',
-                                    reply_markup=get_default_keyboard())
-    except Exception as e:
-        await message.reply(f'Произошла ошибка при удалении: {e}')
+                requests.delete(f'{BASE_URL}/chats/{chat_id}/')
 
-@dp.message(F.text, Command(commands=get_commands()))
-async def exercises_handler(message: types.Message):
-    try:
-        resp = requests.get(f'{BASE_URL}/users/{message.chat.id}/')
-        chat = resp.json().get('chat')
-
-        if chat:
-            chat_id = chat[0].get('id')
-            requests.delete(f'{BASE_URL}/chats/{chat_id}/')
-
-        exercise = message.text.lstrip("/")
-        payload = {
-            'user': message.chat.id,
-            'exercise': exercise
-        }
-        requests.post(f'{BASE_URL}/chats/', data=payload)
-        await bot.send_message(message.from_user.id, f'Давай приступим к технике {exercise}?')
-    except Exception as e:
-        await bot.send_message(message.from_user.id, f'ошибка при выборе техники {e}')
-
+            exercise = message.text.lstrip("/")
+            payload = {
+                'user': message.chat.id,
+                'exercise': exercise
+            }
+            requests.post(f'{BASE_URL}/chats/', data=payload)
+            await bot.send_message(message.from_user.id, f'Давай приступим к технике {exercise}?')
+        except Exception as e:
+            await bot.send_message(message.from_user.id, f'ошибка при выборе техники {e}')
+    else:
+        await bot.send_message(message.from_user.id, f'Я не знаю такую команду')
 
 
 @dp.message(F.text)
