@@ -1,65 +1,6 @@
-import datetime
-from django.utils import timezone
 from rest_framework import serializers
 
-from .models import OpenAIAssistant, OpenAIThread, User, Chat, Message, Exercise
-
-
-
-
-class OpenAIAssistantSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели OpenAIAssistant,
-    где created_at — просто IntegerField.
-    """
-    instructions = serializers.CharField(allow_blank=True)
-
-    class Meta:
-        model = OpenAIAssistant
-        # Указываем ровно те поля, что есть в модели
-        fields = [
-            'id',
-            'object',
-            'created_at',
-            'name',
-            'description',
-            'model',
-            'instructions',
-            'tools',
-            'metadata',
-            'top_p',
-            'temperature',
-            'response_format',
-        ]
-        read_only_fields = ['object']
-
-class OpenAIThreadSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели OpenAIThread:
-    {
-      "id": "thread_abc123",
-      "object": "thread",
-      "created_at": 1698107661,
-      "metadata": { ... }
-    }
-    """
-
-    # Поле “object” по умолчанию равно "thread", можно сделать его read-only
-    object = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = OpenAIThread
-        fields = [
-            "id",
-            "object",
-            "created_at",
-            "metadata",
-        ]
-        extra_kwargs = {
-            "id": {"help_text": "Уникальный идентификатор потока (например, \"thread_abc123\")"},
-            "created_at": {"required": False, "allow_null": True},
-            "metadata": {"required": False},
-        }
+from .models import User, Chat, Message, Exercise, ChatProgress, Audio, PDFFile
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -71,55 +12,41 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'chat', 'role', 'content', 'created_at', 'updated_at']
 
 
-class ChatSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели Chat с вложенными сообщениями.
-    """
-
-    class Meta:
-        model = Chat
-        fields = ['id', 'user', 'exercise']
-
-
 class UserSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели User.
     Включает вложенные ассистента, тред и чаты.
     """
-    chat = ChatSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
         fields = [
-            'chat_id',
-            'title',
+            'id',
             'username',
             'first_name',
             'last_name',
+            'sex',
             'paid',
-            'chat'
+            'telegram_id'
         ]
 
 
 class GenerateTextSerializer(serializers.Serializer):
-    chat_id = serializers.IntegerField(
-        help_text='ID Telegram-чата пользователя'
+    user_id = serializers.IntegerField(
+        help_text='ID пользователя'
     )
     text = serializers.CharField(
         help_text='Текст сообщения для генерации ответа',
-        trim_whitespace=True
+        trim_whitespace=True,
+        required=True
     )
-    exercise = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        help_text='Название упражнения (необязательно)'
-    )
+    status = serializers.CharField(read_only=True)
 
-    def validate_user_id(self, value):
+    def validate_id(self, value):
         """
         Проверяем, что пользователь с таким chat_id существует.
         """
-        if not User.objects.filter(chat_id=value).exists():
+        if not User.objects.filter(id=value).exists():
             raise serializers.ValidationError('Пользователь с таким user_id не найден.')
         return value
 
@@ -131,21 +58,28 @@ class GenerateTextSerializer(serializers.Serializer):
             raise serializers.ValidationError('Текст не может быть пустым.')
         return value
 
+class ResponseGenerateSerializer(serializers.Serializer):
+    data = GenerateTextSerializer()
+
 class GenerateAudioSerializer(serializers.Serializer):
     """
     Сериализатор для генерации аудио из текста.
     Принимает user_id и текст для озвучки.
     """
     user_id = serializers.IntegerField(
-        help_text='ID Telegram-чата пользователя'
+        help_text='ID пользователя'
     )
     file = serializers.FileField(
         help_text='Загружаемый файл'
     )
 
-    def validate_user_id(self, value):
-        if not User.objects.filter(chat_id=value).exists():
-            raise serializers.ValidationError('Пользователь с таким chat_id не найден.')
+    def validate_id(self, value):
+        """
+        Проверяем, что пользователь с таким chat_id существует.
+        """
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError(
+                'Пользователь с таким user_id не найден.')
         return value
 
 class ExerciseSerializer(serializers.ModelSerializer):
@@ -154,4 +88,35 @@ class ExerciseSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Exercise
-        fields = ['id', 'name', 'content', 'order']
+        fields = ['id', 'name', 'order', 'start_audio', 'end_audio',
+                  'additional_audio', 'start_pdf', 'end_pdf', 'additional_pdf']
+
+class ProgressSerializer(serializers.ModelSerializer):
+    exercise = ExerciseSerializer()  # вложим инфо об упражнении
+
+    class Meta:
+        model = ChatProgress
+        fields = ['id', 'status', 'started_at', 'finished_at', 'exercise']
+
+
+class ChatSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели Chat с вложенными сообщениями.
+    """
+    progress = ProgressSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Chat
+        fields = ['id', 'user', 'progress','messages']
+
+class AudioSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Audio
+        fields = '__all__'
+
+class PDFSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PDFFile
+        fields = '__all__'
