@@ -34,9 +34,7 @@ class SexChoice(models.TextChoices):
     FEMALE = 'female', _('Female')
 
 class User(models.Model):
-    """
-    Пользователь Telegram (chat_id — PK, чтобы быстро искать).
-    """
+
     username = models.CharField(max_length=255, null=True, blank=True)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
@@ -205,7 +203,6 @@ class Chat(models.Model):
             self.current_exercise = next_ex
             self.save(update_fields=['current_exercise'])
             return next_ex
-        # Обновим указатель для быстрого доступа
         if next_ex != self.current_exercise:
             self.current_exercise = next_ex
             self.save(update_fields=['current_exercise'])

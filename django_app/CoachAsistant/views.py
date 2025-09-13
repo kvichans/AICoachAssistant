@@ -46,9 +46,7 @@ class UserViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet
 ):
-    """
-    Создание, получение и удаление пользователей по chat_id.
-    """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'telegram_id'
@@ -56,10 +54,7 @@ class UserViewSet(
 
     @action(detail=True, methods=["get"])
     def chat(self, request, telegram_id=None):
-        """
-        Получить чат, привязанный к юзеру.
-        GET /users/{telegram_id}/chat/
-        """
+
         user = self.get_object()
         chat = Chat.objects.filter(user=user).first()
         if not chat:
@@ -78,17 +73,10 @@ class ChatViewSet(
 class ExerciseViewSet(mixins.ListModelMixin,
                       mixins.RetrieveModelMixin,
                       viewsets.GenericViewSet):
-    """
-    ViewSet для просмотра списка упражнений и деталей.
-    Только методы list и retrieve.
-    """
+
     queryset = Exercise.objects.all().order_by('order')
     serializer_class = ExerciseSerializer
 class GenerateTextView(APIView):
-    """
-    POST /api/generate-text/
-    Принимает JSON {chat_id, text} и возвращает {chat_id, generated_text}.
-    """
 
     @swagger_auto_schema(
         request_body=GenerateTextSerializer,
@@ -134,13 +122,7 @@ class GenerateTextView(APIView):
         )
 
 class GenerateAudioView(APIView):
-    """
-    POST /api/generate-audio/此
-    Принимает multipart/form-data с полями:
-      - file: аудио
-      - user_id: идентификатор чата
-    Возвращает обработанный аудиофайл.
-    """
+
     parser_classes = [MultiPartParser]
 
     def post(self, request, *args, **kwargs):

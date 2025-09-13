@@ -149,7 +149,6 @@ async def cmd_next(callback: CallbackQuery):
     if in_progress:
         payload = {"status": "ended"}
         for p in in_progress:
-            # ВАЖНО: берём id из самого элемента прогресса
             requests.patch(f"{BASE_URL}/progress/{p['id']}/", json=payload)
         await send_generated_messages(callback.from_user.id, callback.data)
         return
@@ -245,7 +244,6 @@ async def voice_handler(message: types.Message):
     except Exception as e:
         await bot.send_message(message.from_user.id, f'Ошибка при генерации аудио: {e}')
 
-# === Main ===
 async def main():
     print('Бот запущен...')
     await dp.start_polling(bot)

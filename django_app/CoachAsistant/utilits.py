@@ -9,16 +9,13 @@ def safe_get_answer_from_message(msg) -> str:
     3) raw content (JSON или просто текст)
     Возвращает строку.
     """
-    # 1) parsed
     parsed = getattr(msg, "parsed", None)
     if parsed is not None:
-        # pydantic BaseModel -> поле answer
         try:
             return parsed.answer
         except Exception:
             pass
 
-    # 2) tool calls (если объявлялись tools)
     tool_calls = getattr(msg, "tool_calls", None)
     if tool_calls:
         args = tool_calls[0].function.arguments
@@ -27,22 +24,17 @@ def safe_get_answer_from_message(msg) -> str:
             if isinstance(obj, dict) and "answer" in obj:
                 return str(obj["answer"])
         except Exception:
-            # если arguments не JSON — упадём на шаг 3
             pass
 
-    # 3) raw content
     raw = (getattr(msg, "content", None) or "").strip()
     if not raw:
-        return ""  # пусто — вернём пустую строку
-    # возможно, это json
+        return ""
     try:
         obj = json.loads(raw)
         if isinstance(obj, dict) and "answer" in obj:
             return str(obj["answer"])
-        # если это был валидный json, но без "answer" — вернём как строку
         return raw
     except json.JSONDecodeError:
-        # не json — вернём как есть
         return raw
 
 def safe_url(request, file_field):

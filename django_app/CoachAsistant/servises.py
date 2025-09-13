@@ -36,7 +36,7 @@ def ogg_bytes_to_mp3_bytes(ogg_bytes: bytes, bitrate: str = "192k"):
 
 class UserService:
     '''
-    Сервис для работы с моделью User через сериализатор.
+    Сервис для работы с моделью User.
     '''
     def __init__(self, user_id):
         self.user_id = user_id
@@ -147,7 +147,6 @@ class OpenAIAPIService:
         Возвращает ТЕКСТ ответа ассистента и сохраняет его в Message.
         Никогда не возвращает Exception как значение.
         """
-
         exercise = self.message_service.chat.get_current_exercise()
         if exercise is None:
             pdf_list = PDFFile.objects.filter(is_last=True)
