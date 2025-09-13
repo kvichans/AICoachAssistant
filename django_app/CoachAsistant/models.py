@@ -34,7 +34,6 @@ class SexChoice(models.TextChoices):
     FEMALE = 'female', _('Female')
 
 class User(models.Model):
-
     username = models.CharField(max_length=255, null=True, blank=True)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)

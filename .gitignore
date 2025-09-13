@@ -2,3 +2,4 @@
 /django_app/.env
 /django_app/db.sqlite3
 /data/
+/.env
