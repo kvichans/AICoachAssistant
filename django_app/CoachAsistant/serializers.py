@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import User, Chat, Message, Exercise, ChatProgress, Audio, PDFFile
 
 
-class MessageSerializer(serializers.ModelSerializer):
+class MessageSerializer(serializers.ModelSerializer):   #!kv read
     """
     Сериализатор для модели Message.
     """
@@ -15,7 +15,7 @@ class MessageSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели User.
-    Включает вложенные ассистента, тред и чаты.
+    Включает вложенные ассистента, тред и чаты. #!kv ?
     """
 
     class Meta:
@@ -91,7 +91,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'order', 'start_audio', 'end_audio',
                   'additional_audio', 'start_pdf', 'end_pdf', 'additional_pdf']
 
-class ProgressSerializer(serializers.ModelSerializer):
+class ProgressSerializer(serializers.ModelSerializer):  #!kv Progress?
     exercise = ExerciseSerializer()  # вложим инфо об упражнении
 
     class Meta:

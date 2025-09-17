@@ -21,7 +21,7 @@ from .servises import OpenAIAPIService, MessageService, UserService, ogg_bytes_t
 from .utilits import safe_url
 
 load_dotenv()
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')    #!kv fail
 
 
 class ChatProgressViewSet(mixins.ListModelMixin,

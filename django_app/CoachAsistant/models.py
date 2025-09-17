@@ -16,7 +16,7 @@ class RoleChoice(models.TextChoices):
     DEVELOPER = 'developer', _('Developer')
     USER = 'user', _('User')
     ASSISTANT = 'assistant', _('Assistant')
-    INTERNAL = 'internal', _('Внутренняя')
+    INTERNAL = 'internal', _('Внутренняя')  #!kv
 
 class ProgressStatus(models.TextChoices):
     NOT_STARTED = 'not_started', _('Not started')
@@ -34,10 +34,10 @@ class SexChoice(models.TextChoices):
     FEMALE = 'female', _('Female')
 
 class User(models.Model):
-    username = models.CharField(max_length=255, null=True, blank=True)
+    username = models.CharField(max_length=255, null=True, blank=True)  #!kv
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
-    sex = models.CharField(choices=SexChoice, default=SexChoice.MALE, max_length=255)
+    sex = models.CharField(choices=SexChoice, default=SexChoice.MALE, max_length=255)   #!kv
     paid = models.BooleanField(default=False)
     telegram_id = models.BigIntegerField(
         help_text='Уникальный идентификатор чата в Telegram',
@@ -47,7 +47,7 @@ class User(models.Model):
     )
 
     def __str__(self):
-        return f"{self.username or self.first_name or self.telegram_id}"
+        return f"{self.username or self.first_name or self.telegram_id}"    #!kv all
 
 class Audio(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
@@ -60,7 +60,7 @@ class Audio(models.Model):
     def __str__(self):
         return f'{self.title} | {self.sex}'
 
-class PDFFile(models.Model):
+class PDFFile(models.Model):    #!kv commin base
     title = models.CharField(max_length=255, null=True, blank=True)
     file = models.FileField(upload_to='pdf')
     is_first = models.BooleanField(default=False)
@@ -83,8 +83,8 @@ class Exercise(models.Model):
         Audio,
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='exercises_as_start_audio',  # уникально
-        related_query_name='exercise_as_start_audio',  # опционально
+        related_name='exercises_as_start_audio',  # уникально   #!kv exercises?
+        related_query_name='exercise_as_start_audio',  # опционально    #!kv
     )
     end_audio = models.ForeignKey(
         Audio,
@@ -129,7 +129,7 @@ class Exercise(models.Model):
         return f"[{self.order}] {self.name}"
 
     def next(self):
-        return Exercise.objects.filter(is_active=True, order__gt=self.order).order_by('order').first()
+        return Exercise.objects.filter(is_active=True, order__gt=self.order).order_by('order').first() #!kv no? order_by?
 
 
 class Instruction(models.Model):
@@ -138,7 +138,7 @@ class Instruction(models.Model):
     (Можно хранить архив неактивных версий)
     """
     text = models.TextField()
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)   #!kv fail
 
     class Meta:
         constraints = [
@@ -147,7 +147,7 @@ class Instruction(models.Model):
                 condition=Q(is_active=True),
                 fields=["is_active"],
                 name='only_one_active_instruction'
-            )
+            )   #!kv fail
         ]
 
     def __str__(self):
@@ -158,7 +158,7 @@ class Instruction(models.Model):
         return cls.objects.filter(is_active=True).first()
 
 
-class Chat(models.Model):
+class Chat(models.Model):   #!kv char? progress!
     """
     Чат пользователя. current_exercise — "указатель" на текущее упражнение.
     История/состояния по каждому упражнению храним в ChatProgress.
@@ -166,18 +166,18 @@ class Chat(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='chat'
+        related_name='chat' #!kv
     )
     status = models.CharField(choices=ProgressStatus, default=ProgressStatus.NOT_STARTED)
     current_exercise = models.ForeignKey(
         Exercise,
         null=True, blank=True,
         on_delete=models.SET_NULL,
-        related_name='chats_current'
+        related_name='chats_current'    #!kv
     )
 
     def __str__(self):
-        return f"Chat<{self.user}>"
+        return f"Chat<{self.user}>"     #!kv
 
     def _is_not_done(self, exercise: Exercise) -> bool:
         return not ChatProgress.objects.filter(chat=self, exercise=exercise, status=ProgressStatus.DONE).exists()
@@ -194,11 +194,11 @@ class Chat(models.Model):
             Exercise.objects
             .filter(is_active=True)
             .exclude(progress__chat=self, progress__status=ProgressStatus.DONE)
-            .order_by('order')
+            .order_by('order')   #!kv del
             .first()
-        )
+        )   #!kv fail "one path"
         if not next_ex:
-            next_ex = None
+            next_ex = None   #!kv ?
             self.current_exercise = next_ex
             self.save(update_fields=['current_exercise'])
             return next_ex
@@ -223,17 +223,17 @@ class Chat(models.Model):
         ).first()
 
 
-class ChatProgress(TimeStampedModel):
+class ChatProgress(TimeStampedModel):   #!kv TimeStampedModel? ChatProgress?
     """
     Прогресс по каждому упражнению для конкретного чата.
     """
-    user = models.ForeignKey('User', on_delete=models.CASCADE,
-                             related_name='progress',
-                             editable=False, null=True, blank=True)
+    user = models.ForeignKey('User', on_delete=models.CASCADE,  #!kv 'User'
+                             related_name='progress',   #!kv sses
+                             editable=False, null=True, blank=True)     #!kv `null=True, blank=True`?
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='progress')
     exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='progress')
     status = models.CharField(
-        max_length=20,
+        max_length=20,  #!kv max(len)
         choices=ProgressStatus.choices,
         default=ProgressStatus.NOT_STARTED
     )
@@ -241,24 +241,24 @@ class ChatProgress(TimeStampedModel):
     finished_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('chat', 'exercise')
+        unique_together = ('chat', 'exercise')  #!kv depr
         indexes = [
             models.Index(fields=['chat', 'status']),
             models.Index(fields=['exercise', 'status']),
-        ]
+        ]   #!kv рано
 
     def __str__(self):
         return f"{self.chat} — {self.exercise} [{self.status}]"
 
 
-class Message(TimeStampedModel):
+class Message(TimeStampedModel):    #!kv
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
     exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
-    role = models.CharField(max_length=50, choices=RoleChoice.choices)
+    role = models.CharField(max_length=50, choices=RoleChoice.choices)  #!kv max(len)
     content = models.TextField(null=True, blank=True)
-    type = models.CharField(choices=TypesMessage.choices, default=TypesMessage.TEXT, max_length=50)
+    type = models.CharField(choices=TypesMessage.choices, default=TypesMessage.TEXT, max_length=50)  #!kv max(len)
     audio = models.ForeignKey(Audio, null=True, blank=True, on_delete=models.SET_NULL, default=None)
     pdf = models.ForeignKey(PDFFile, null=True, blank=True, on_delete=models.SET_NULL, default=None)
 
     def __str__(self):
-        return f"{self.role}: {(self.content or '')[:40]}"
+        return f"{self.role}: {(self.content or '')[:40]}"  #!kv  or

@@ -83,7 +83,7 @@ class OpenAIAPIService:
 
     def __init__(self, token, message_service):
         self.client = OpenAI(api_key=token)
-        self.message_service: MessageService = message_service or None
+        self.message_service: MessageService = message_service or None #!kv or None
 
     def _persist_files_and_reply(self, exercise, audio_list, pdf_list) -> list[Message]:
         """Сохраняет файлы как внутренние сообщения и возвращает «пустой» ответ с файловым блоком."""
@@ -98,7 +98,7 @@ class OpenAIAPIService:
                 type_message=TypesMessage.AUDIO,
                 audio=a,
             )
-            messages.append(message)
+            messages.append(message)    #!kv [for if]
         for p in pdf_list:
             message = self.message_service.create(
                 role=RoleChoice.INTERNAL,
@@ -107,7 +107,7 @@ class OpenAIAPIService:
                 pdf=p,
             )
             messages.append(message)
-        return messages
+        return messages #!kv [for + if]
 
     def speach_to_text(self, speech: BytesIO):
         speech.seek(0)
@@ -118,7 +118,7 @@ class OpenAIAPIService:
         return transcript.text
 
     def text_to_speach(self, text_for_speach):
-        bio = BytesIO()
+        bio = BytesIO() #!kv bio?
         with self.client.audio.speech.with_streaming_response.create(
                 model="gpt-4o-mini-tts",
                 voice="alloy",
@@ -133,7 +133,7 @@ class OpenAIAPIService:
                 Speed of speech: very fast
                 Tone: calm, friendly, trust-building
                 Whispering: subtle, quiet inflections on emphatic phrases
-                """,
+                """,    #!kv dedent cfg-const
         ) as response:
             for chunk in response.iter_bytes(chunk_size=32 * 1024):
                 bio.write(chunk)
@@ -144,12 +144,12 @@ class OpenAIAPIService:
 
     def generate(self, content: str, request=None) -> Tuple[list[Message], str]:
         """
-        Возвращает ТЕКСТ ответа ассистента и сохраняет его в Message.
-        Никогда не возвращает Exception как значение.
+        Возвращает ТЕКСТ ответа ассистента и сохраняет его в Message.   #!kv ?
+        Никогда не возвращает Exception как значение.   #!kv ?
         """
         exercise = self.message_service.chat.get_current_exercise()
         if exercise is None:
-            pdf_list = PDFFile.objects.filter(is_last=True)
+            pdf_list = PDFFile.objects.filter(is_last=True) #!kv get?
             audio_list = Audio.objects.filter(is_last=True)
             result = self._persist_files_and_reply(exercise, audio_list,
                                                    pdf_list)
@@ -183,7 +183,7 @@ class OpenAIAPIService:
             instruction = Instruction.objects.create(text=default_instructions, is_active=True)
 
         if exercise:
-            messages.insert(0, {"role": "assistant", "content": f"Давай приступим к технике «{exercise.name}»?"})
+            messages.insert(0, {"role": "assistant", "content": f"Давай приступим к технике «{exercise.name}»?"})   #!kv cfg
             messages.insert(0, {"role": "user", "content": exercise.content})
 
         messages.insert(0, {
@@ -198,7 +198,7 @@ class OpenAIAPIService:
 
         try:
             completion = self.client.beta.chat.completions.parse(
-                model="gpt-5",
+                model="gpt-5",  #!kv cfg
                 messages=messages,
                 response_format=AnswerModel
             )
@@ -211,4 +211,4 @@ class OpenAIAPIService:
 
         except Exception as e:
             err_text = f"Ошибка генерации ответа: {e}"
-            raise err_text
+            raise err_text #!kv dail

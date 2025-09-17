@@ -14,7 +14,7 @@ def safe_get_answer_from_message(msg) -> str:
         try:
             return parsed.answer
         except Exception:
-            pass
+            pass    #!kv ?
 
     tool_calls = getattr(msg, "tool_calls", None)
     if tool_calls:
@@ -45,7 +45,7 @@ def safe_url(request, file_field):
 def get_ended_files(request, exercise):
     audio_raw = [exercise.end_audio]
     pdf_raw = [exercise.end_pdf]
-    audio_clear_list = [f for f in audio_raw if f]
+    audio_clear_list = [f for f in audio_raw if f]  #!kv ?
     pdf_clear_list = [f for f in pdf_raw if f]
     return audio_clear_list, pdf_clear_list
 
@@ -58,6 +58,6 @@ def get_started_files(request, exercise):
         exercise.start_pdf,
         exercise.additional_pdf
     ]
-    audio_clear_list = [f for f in audio_raw if f]
+    audio_clear_list = [f for f in audio_raw if f]  #!kv ?
     pdf_clear_list = [f for f in pdf_raw if f]
     return audio_clear_list, pdf_clear_list

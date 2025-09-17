@@ -24,11 +24,11 @@ class ChatProgressInline(admin.TabularInline):
     def id_link(self, obj):
         if not obj.pk:
             return "-"
-        url = reverse("admin:%s_%s_change" % (
+        url = reverse("admin:%s_%s_change" % (  #!kv %
             obj._meta.app_label, obj._meta.model_name
         ), args=[obj.pk])
         return format_html('<a href="{}">{}</a>', url, obj.pk)
-    id_link.short_description = "ID"
+    id_link.short_description = "ID"    #!kv
 
     def exercise_display(self, obj):
         return str(obj.exercise) if obj.exercise else "-"
